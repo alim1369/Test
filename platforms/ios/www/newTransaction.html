@@ -1,0 +1,99 @@
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left sliding"><a href="index.html" class="back link"><i class="icon icon-back"></i><span>بازگشت</span></a></div>
+    <div class="center sliding">تراکنش جدید</div>
+    <div class="right"><a href="#" class="link open-panel icon-only"><i class="icon icon-bars"></i></a></div>
+  </div>
+</div>
+<div class="pages navbar-through">
+  <div data-page="newTransaction" class="page">
+    <div class="page-content">
+      <div class="content-block-title">مشخصات</div>
+      <div class="list-block">
+        <ul>
+		<li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-name"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">نام گروه</div>
+                <div class="item-input">
+                  <label id="GroupName" type="text">{{groups url_query.groupid "Name"}}</label>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-comment"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">توضیحات</div>
+                <div class="item-input">
+                  <input id="Description" type="text" placeholder="توضیحات">
+                </div>
+              </div>
+            </div>
+          </li>
+          
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-settings"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">نوع تراکنش</div>
+                <div class="item-input">
+                  <select id="Type">
+                    <option value="1">غذا</option>
+                    <option value="2">حمل و نقل</option>
+					<option value="3">بلیط</option>
+					<option value="4">علی الحساب</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-calendar"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">زمان</div>
+                <div class="item-input">
+				  <input type="text" placeholder="زمان" readonly="readonly" id="DateTimeFaDisplay"/>
+				  <input type="hidden" placeholder="Date Time" readonly="readonly" id="DateTimeFa"/>
+                  
+                </div>
+              </div>
+            </div>
+          </li>
+          
+        </ul>
+      </div>
+      <div class="content-block-title">جزییات پرداخت</div>
+      <div class="list-block">
+        <ul id="userPayments">
+			<li>
+				<div class="item-content">
+				  <div class="item-inner"> 
+					<div class="item-title label">
+						<a id="equalDivide" href="#" class="list-button item-link active">تقسیم هزینه</a>
+					</div>
+					<div class="item-input">
+						<div class="row">
+						<div class="col-50">هزینه کل: <label id="sumCost">۰</label></div>
+						<div class="col-50">پرداختی کل: <label id="sumPayment">۰</label></div>
+					  </div>
+					</div>
+				  </div>
+				</div>
+			</li>
+			
+          
+		</ul>
+      </div>
+	  <div class="list-block">
+        <ul>
+		<li><a id="submitTransaction" href="#" class="list-button item-link active">تایید</a></li>
+		</ul>
+      </div>
+    </div>
+  </div>
+</div>

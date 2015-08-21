@@ -1,0 +1,186 @@
+<NotepadPlus>
+    <Project name="www">
+        <Folder name="css">
+            <File name="www\css\kitchen-sink.css" />
+        </Folder>
+        <Folder name="img">
+            <File name="www\img\beach.jpg" />
+            <File name="www\img\icon.png" />
+            <File name="www\img\lock.jpg" />
+            <File name="www\img\monkey.jpg" />
+            <File name="www\img\mountains.jpg" />
+        </Folder>
+        <Folder name="js">
+            <File name="www\js\clouddong.js" />
+            <File name="www\js\kitchen-sink.js" />
+        </Folder>
+        <Folder name="less">
+            <File name="www\less\kitchen-sink.less" />
+        </Folder>
+        <Folder name="lib">
+            <Folder name="css">
+                <File name="www\lib\css\framework7.ios.colors.css" />
+                <File name="www\lib\css\framework7.ios.colors.min.css" />
+                <File name="www\lib\css\framework7.ios.css" />
+                <File name="www\lib\css\framework7.ios.min.css" />
+                <File name="www\lib\css\framework7.ios.rtl.css" />
+                <File name="www\lib\css\framework7.ios.rtl.min.css" />
+                <File name="www\lib\css\framework7.material.colors.css" />
+                <File name="www\lib\css\framework7.material.colors.min.css" />
+                <File name="www\lib\css\framework7.material.css" />
+                <File name="www\lib\css\framework7.material.min.css" />
+                <File name="www\lib\css\framework7.material.rtl.css" />
+                <File name="www\lib\css\framework7.material.rtl.min.css" />
+            </Folder>
+            <Folder name="img">
+                <File name="www\lib\img\i-f7-ios.png" />
+                <File name="www\lib\img\i-f7-material.png" />
+                <File name="www\lib\img\i-form-calendar-ios.svg" />
+                <File name="www\lib\img\i-form-calendar-material.svg" />
+                <File name="www\lib\img\i-form-comment-ios.svg" />
+                <File name="www\lib\img\i-form-comment-material.svg" />
+                <File name="www\lib\img\i-form-email-ios.svg" />
+                <File name="www\lib\img\i-form-email-material.svg" />
+                <File name="www\lib\img\i-form-gender-ios.svg" />
+                <File name="www\lib\img\i-form-gender-material.svg" />
+                <File name="www\lib\img\i-form-name-ios.svg" />
+                <File name="www\lib\img\i-form-name-material.svg" />
+                <File name="www\lib\img\i-form-password-ios.svg" />
+                <File name="www\lib\img\i-form-password-material.svg" />
+                <File name="www\lib\img\i-form-settings-ios.svg" />
+                <File name="www\lib\img\i-form-settings-material.svg" />
+                <File name="www\lib\img\i-form-tel-ios.svg" />
+                <File name="www\lib\img\i-form-tel-material.svg" />
+                <File name="www\lib\img\i-form-toggle-ios.svg" />
+                <File name="www\lib\img\i-form-toggle-material.svg" />
+                <File name="www\lib\img\i-form-url-ios.svg" />
+                <File name="www\lib\img\i-form-url-material.svg" />
+            </Folder>
+            <Folder name="js">
+                <File name="www\lib\js\db.js" />
+                <File name="www\lib\js\framework7.js" />
+                <File name="www\lib\js\framework7.js.map" />
+                <File name="www\lib\js\framework7.min.js" />
+                <File name="www\lib\js\framework7.min.js.map" />
+                <File name="www\lib\js\indexeddbshim.min.js" />
+                <File name="www\lib\js\promise-7.0.1.min.js" />
+            </Folder>
+        </Folder>
+        <File name="www\dash.html" />
+        <File name="www\editname.html" />
+        <File name="www\enterOTP.html" />
+        <File name="www\group.html" />
+        <File name="www\index.html" />
+        <File name="www\login.html" />
+        <File name="www\settings.html" />
+        <File name="www\transaction.html" />
+        <File name="www\groups.html" />
+    </Project>
+    <Project name="www-sample">
+        <Folder name="css">
+            <File name="www-sample\css\kitchen-sink.css" />
+        </Folder>
+        <Folder name="img">
+            <File name="www-sample\img\beach.jpg" />
+            <File name="www-sample\img\icon.png" />
+            <File name="www-sample\img\lock.jpg" />
+            <File name="www-sample\img\monkey.jpg" />
+            <File name="www-sample\img\mountains.jpg" />
+        </Folder>
+        <Folder name="js">
+            <File name="www-sample\js\kitchen-sink.js" />
+        </Folder>
+        <Folder name="less">
+            <File name="www-sample\less\kitchen-sink.less" />
+        </Folder>
+        <Folder name="lib">
+            <Folder name="css">
+                <File name="www-sample\lib\css\framework7.ios.colors.css" />
+                <File name="www-sample\lib\css\framework7.ios.colors.min.css" />
+                <File name="www-sample\lib\css\framework7.ios.css" />
+                <File name="www-sample\lib\css\framework7.ios.min.css" />
+                <File name="www-sample\lib\css\framework7.ios.rtl.css" />
+                <File name="www-sample\lib\css\framework7.ios.rtl.min.css" />
+                <File name="www-sample\lib\css\framework7.material.colors.css" />
+                <File name="www-sample\lib\css\framework7.material.colors.min.css" />
+                <File name="www-sample\lib\css\framework7.material.css" />
+                <File name="www-sample\lib\css\framework7.material.min.css" />
+                <File name="www-sample\lib\css\framework7.material.rtl.css" />
+                <File name="www-sample\lib\css\framework7.material.rtl.min.css" />
+            </Folder>
+            <Folder name="js">
+                <File name="www-sample\lib\js\framework7.js" />
+                <File name="www-sample\lib\js\framework7.js.map" />
+                <File name="www-sample\lib\js\framework7.min.js" />
+                <File name="www-sample\lib\js\framework7.min.js.map" />
+            </Folder>
+        </Folder>
+        <File name="www-sample\about.html" />
+        <File name="www-sample\accordion.html" />
+        <File name="www-sample\bars-deep-navbar-2.html" />
+        <File name="www-sample\bars-deep-navbar-3.html" />
+        <File name="www-sample\bars-deep-navbar.html" />
+        <File name="www-sample\bars-hide-on-scroll.html" />
+        <File name="www-sample\bars-hide.html" />
+        <File name="www-sample\bars-no-navbar-toolbar.html" />
+        <File name="www-sample\bars-no-navbar.html" />
+        <File name="www-sample\bars-no-toolbar.html" />
+        <File name="www-sample\bars-sub-navbar.html" />
+        <File name="www-sample\bars-tabbar-labels.html" />
+        <File name="www-sample\bars-tabbar.html" />
+        <File name="www-sample\bars.html" />
+        <File name="www-sample\calendar.html" />
+        <File name="www-sample\cards.html" />
+        <File name="www-sample\color-themes.html" />
+        <File name="www-sample\contacts.html" />
+        <File name="www-sample\core-features.html" />
+        <File name="www-sample\forms-buttons.html" />
+        <File name="www-sample\forms-checkboxes.html" />
+        <File name="www-sample\forms-elements.html" />
+        <File name="www-sample\forms-selects.html" />
+        <File name="www-sample\forms-storage.html" />
+        <File name="www-sample\forms.html" />
+        <File name="www-sample\grid.html" />
+        <File name="www-sample\index.html" />
+        <File name="www-sample\infinite-scroll-load.php" />
+        <File name="www-sample\infinite-scroll.html" />
+        <File name="www-sample\lazy-load.html" />
+        <File name="www-sample\list-view.html" />
+        <File name="www-sample\login-screen-embedded.html" />
+        <File name="www-sample\login-screen.html" />
+        <File name="www-sample\media-lists.html" />
+        <File name="www-sample\messages.html" />
+        <File name="www-sample\modals.html" />
+        <File name="www-sample\notifications.html" />
+        <File name="www-sample\panel-right2.html" />
+        <File name="www-sample\panel-right3.html" />
+        <File name="www-sample\panels.html" />
+        <File name="www-sample\photo-browser.html" />
+        <File name="www-sample\picker.html" />
+        <File name="www-sample\popover.html" />
+        <File name="www-sample\preloader.html" />
+        <File name="www-sample\pull-to-refresh.html" />
+        <File name="www-sample\searchbar.html" />
+        <File name="www-sample\sortable-list.html" />
+        <File name="www-sample\swipe-delete.html" />
+        <File name="www-sample\swiper-3d-coverflow.html" />
+        <File name="www-sample\swiper-3d-cube.html" />
+        <File name="www-sample\swiper-control.html" />
+        <File name="www-sample\swiper-custom.html" />
+        <File name="www-sample\swiper-fade.html" />
+        <File name="www-sample\swiper-gallery.html" />
+        <File name="www-sample\swiper-horizontal.html" />
+        <File name="www-sample\swiper-lazy.html" />
+        <File name="www-sample\swiper-loop.html" />
+        <File name="www-sample\swiper-multiple.html" />
+        <File name="www-sample\swiper-nested.html" />
+        <File name="www-sample\swiper-parallax.html" />
+        <File name="www-sample\swiper-scrollbar.html" />
+        <File name="www-sample\swiper-space-between.html" />
+        <File name="www-sample\swiper-vertical.html" />
+        <File name="www-sample\swiper.html" />
+        <File name="www-sample\tabs.html" />
+        <File name="www-sample\transitions.html" />
+        <File name="www-sample\virtual-list.html" />
+    </Project>
+</NotepadPlus>

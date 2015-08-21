@@ -1,0 +1,93 @@
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left sliding"><a href="index.html" class="back link"><i class="icon icon-back"></i><span>بازگشت</span></a></div>
+    <div class="center sliding">ویرایش نام</div>
+    <div class="right"><a href="#" class="link open-panel icon-only"><i class="icon icon-bars"></i></a></div>
+  </div>
+</div>
+<div class="pages navbar-through">
+  <div data-page="editname" class="page">
+    <div class="page-content">
+      <div class="content-block-title">مشخصات</div>
+      <div class="list-block">
+        <ul>
+		<li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-name"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">نام</div>
+                <div class="item-input">
+                  <input id="FirstName" type="text" placeholder="نام شما به فارسی" value="{{me "FirstName"}}"/>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-name"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">فامیل</div>
+                <div class="item-input">
+                  <input id="LastName" type="text" placeholder="فامیل شما به فارسی" value="{{me "LastName"}}">
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-email"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">رایانامه</div>
+                <div class="item-input">
+                  <input id="Email" type="email" placeholder="name@example.com" value="{{me "Email"}}"/>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-tel"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">موبایل:</div>
+                <div class="item-input">
+                  ۰{{me "Phone" "persian"}}
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-gender"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">جنسیت</div>
+                <div class="item-input">
+                  <select id="Gender">
+                    <option value="false">خانم</option>
+                    <option {{js "users[me()].Male?'selected':''"}} value="true">آقا</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="item-content">
+              <div class="item-media"><i class="icon icon-form-calendar"></i></div>
+              <div class="item-inner"> 
+                <div class="item-title label">تاریخ تولد</div>
+                <div class="item-input">
+				  <input type="text" placeholder="تاریخ تولد" readonly="readonly" id="BirthDayFaDisplay"/>
+				  <input type="hidden" placeholder="Date Time" readonly="readonly" id="BirthDayFa"/>
+                  
+                </div>
+              </div>
+            </div>
+          </li>
+          <li><a id="submitName" href="#" class="list-button item-link active">تایید</a></li>
+          
+        </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>

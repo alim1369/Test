@@ -1,0 +1,39 @@
+
+<div class="navbar">
+  <div class="navbar-inner">
+
+    <div class="center sliding">آخرین تراکنش ها {{me "FirstName"}} {{me "LastName"}}</div>
+    <div class="right"><a href="#" class="open-panel link icon-only"><i class="icon icon-bars"></i></a></div>
+  </div>
+</div>
+<div class="pages navbar-through">
+  <div data-page="dash" class="page">
+    <form data-search-list=".virtual-list" class="searchbar searchbar-init">
+      <div class="searchbar-input">
+        <input type="search" placeholder="Search"/><a href="#" class="searchbar-clear"></a>
+      </div><a href="#" class="searchbar-cancel">لغو</a>
+    </form>
+    <div class="searchbar-overlay"></div>
+    <div class="page-content">
+      
+	  <div class="pull-to-refresh-content">
+		<div class="pull-to-refresh-layer">
+			<div class="preloader"></div>
+			<div class="pull-to-refresh-arrow"></div>
+		</div>
+	
+      <div class="media-list list-block virtual-list searchbar-found media-list"> </div>
+	  
+      <div class="list-block searchbar-not-found">
+        <ul>
+          <li class="item-content">
+            <div class="item-inner">
+              <div class="item-title">یافت می نشود.(به یاد استاد دهقان :D)</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+	</div>
+  </div>
+</div>

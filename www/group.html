@@ -1,0 +1,26 @@
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left sliding"><a href="index.html" class="back link"><i class="icon icon-back"></i><span>بازگشت</span></a></div>
+    <div class="center sliding">گروه {{groups url_query.id "Name"}} <span id="groupname"></span>
+	</div>
+    <div class="right"><a href="#" class="open-panel link icon-only"><i class="icon icon-bars"></i></a></div>
+
+  </div>
+  
+</div>
+
+<div class="pages navbar-through">
+  <div data-page="group" class="page">
+    <div class="page-content">
+		<div class="list-block inset ">
+        <ul>
+          <li><a href="newTransaction.html?groupid={{url_query.id}}" class="list-button item-link">تراکنش جدید</a></li>
+          <li><a href="addMemberToGroup.html?groupid={{url_query.id}}" class="list-button item-link">افزودن عضو به گروه</a></li>
+		  <li><a href="GroupMembers.html?groupid={{url_query.id}}" class="list-button item-link">مشاهده اعضا</a></li>
+          <li><a href="showTransactions.html?groupid={{url_query.id}}" class="list-button item-link">مشاهده تراکنش ها</a></li>
+        </ul>
+      </div>
+	</div>
+  </div>
+</div>

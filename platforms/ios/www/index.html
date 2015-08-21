@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Framework7 iOS</title>
+    <link rel="stylesheet" href="lib/css/framework7.ios.css">
+	<link rel="stylesheet" href="lib/css/framework7.ios.rtl.css">
+    <link rel="stylesheet" href="lib/css/framework7.ios.colors.css">
+    <link rel="stylesheet" href="css/kitchen-sink.css">
+    <link rel="icon" href="img/icon.png">
+    <link rel="apple-touch-icon" href="img/icon.png">
+  </head>
+  <body>
+    <div class="statusbar-overlay"></div>
+    <div class="panel-overlay"></div>
+    <div class="panel panel-left panel-cover layout-dark">
+      <div class="content-block-title">دنگ ابری</div>
+      <div class="list-block">
+        <ul>
+          <li><a href="settings.html" class="item-link close-panel"> 
+              <div class="item-content">
+                  <div class="item-title">تنظیمات</div>
+              </div></a></li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <p>تمامی حقوق محفوظ است.</p>
+      </div>
+    </div>
+    
+    <div class="views">
+      <div class="view view-main">
+        <div class="navbar">
+          <div class="navbar-inner">
+            <div class="center sliding">دنگ ابری</div>
+            <div class="right"><a href="#" class="open-panel link icon-only"><i class="icon icon-bars"></i></a></div>
+          </div>
+        </div>
+        
+		<div class="toolbar tabbar tabbar-labels">
+		  <div class="toolbar-inner">
+		  <a href="dash.html" class="link "><i class="icon ks-tabbar-icon-1"></i><span class="tabbar-label">داشبورد</span></a>
+		  <a href="groups.html" class="link "><i class="icon ks-tabbar-icon-2"><!--<span class="badge bg-red">4</span>--></i><span class="tabbar-label">گروه ها</span></a>
+		  <!--<a href="#tab-3" class="tab-link"><i class="icon ks-tabbar-icon-3"></i><span class="tabbar-label">Upload</span></a>-->
+		  <a href="editname.html" class="link "><i class="icon icon-form-name"></i><span class="tabbar-label">کاربر</span></a></div>
+		</div>		
+
+		<div class="pages navbar-through toolbar-through">
+			<div class="page" data-page="home">
+			  <div class="page-content">
+				<h4>در حال بارگذاری...</h4>
+			  </div>
+			</div>
+		</div>        		
+        
+      </div>
+    </div>
+    
+	<script type="text/javascript" charset="utf-8" src="cordova.js"></script>  
+    <script type="text/javascript" src="lib/js/promise-7.0.1.min.js"></script>
+	<script type="text/javascript" src="lib/js/persian-date-0.1.8.js"></script>
+	
+    <script type="text/javascript" src="lib/js/framework7.js"></script>
+	<script type="text/javascript" src="lib/js/indexeddbshim.min.js"></script>
+	<script type="text/javascript" src="lib/js/db.js"></script>
+    <script type="text/javascript" src="js/clouddong.js"></script>
+	
+  </body>
+</html>
