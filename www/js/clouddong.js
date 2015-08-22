@@ -1,11 +1,10 @@
 // Expose Internal DOM library
 var $$ = Dom7;
 var dbserver;
-var transactions={};
-var groups={};
-var users={};
-
-var memberships={};
+var transactions = {};
+var groups = {};
+var users = {};
+var memberships = {};
 
 function formatDate(pd,hastime){
 	if(hastime)
@@ -75,7 +74,7 @@ document.addEventListener("deviceready", function () {
         }, false );
 }, false);
     
-function initorupdateTransactionList(virtualList,groupid){
+function init_updateTransactionList(virtualList,groupid){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
@@ -104,7 +103,7 @@ function initorupdateTransactionList(virtualList,groupid){
 			myApp.pullToRefreshDone();
 		});
 }
-function initorupdateGroupsList(virtualList){
+function init_updateGroupsList(virtualList){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
@@ -134,7 +133,7 @@ function initorupdateGroupsList(virtualList){
 	
 
 }
-function initorupdateDashList(virtualList){
+function init_updateDashList(virtualList){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
@@ -160,11 +159,21 @@ function initorupdateDashList(virtualList){
 		}		
 			myApp.pullToRefreshDone();
 		});
-
-
-
+}
+function reinitTransactionsCache2(){
+	return new Promise((onready)=>{
+		console.log("re-initing Transactions Cache");
+		dbserver.Transactions.query().filter().execute().then(function(results){
+			for (var i = 0; i < results.length; i++) {
+				transactions[results[i].Id]=results[i];
+			}
+			console.log("	re-inited Transactions Cache");
+			onready();
+		});
+	});
 }
 function reinitTransactionsCache(onready){
+	console.log("re-initing Transactions Cache");
 	onready=onready||function(){};
 	dbserver.Transactions.query().filter().execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {
@@ -173,7 +182,20 @@ function reinitTransactionsCache(onready){
 		onready();
 	});
 }
+function reinitUsersCache2(){
+	return new Promise((onready)=>{
+		console.log("re-initing Users Cache");
+		dbserver.Users.query().filter().execute().then(function(results){
+			for (var i = 0; i < results.length; i++) {
+				users[results[i].Id]=results[i];
+			}
+			console.log("	re-inited Users Cache");
+			onready();
+		});
+	});
+}
 function reinitUsersCache(onready){
+	console.log("re-initing Users Cache");
 	onready=onready||function(){};
 	dbserver.Users.query().filter().execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {
@@ -182,7 +204,21 @@ function reinitUsersCache(onready){
 		onready();
 	});
 }
+function reinitGroupsCache2(){
+	return new Promise((onready)=>{
+		console.log("re-initing Groups Cache");
+		dbserver.Groups.query().filter().execute().then(function(results){
+			for (var i = 0; i < results.length; i++) {
+				groups[results[i].Id]=results[i];
+			}
+			console.log("	re-inited Groups Cache");
+			onready();
+		});
+	});
+	
+}
 function reinitGroupsCache(onready){
+	console.log("re-initing Groups Cache");
 	onready=onready||function(){};
 	dbserver.Groups.query().filter().execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {
@@ -191,7 +227,23 @@ function reinitGroupsCache(onready){
 		onready();
 	});
 }
+function reinitMembershipsCache2(){
+//	onready=onready||function(){};
+	return new Promise((onready)=>{
+		console.log("re-initing Memberships Cache");
+		dbserver.Memberships.query().filter().execute().then(function(results){
+			for (var i = 0; i < results.length; i++) {
+				if(!memberships[results[i].GroupId])
+					memberships[results[i].GroupId]={};
+				memberships[results[i].GroupId][results[i].UserId]=results[i];
+			}	
+			console.log("	re-inited Memberships Cache");
+			onready();
+		});
+	});
+}
 function reinitMembershipsCache(onready){
+	console.log("re-initing Memberships Cache");
 	onready=onready||function(){};
 	dbserver.Memberships.query().filter().execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {
@@ -201,6 +253,20 @@ function reinitMembershipsCache(onready){
 		}	
 		onready();
 	});
+}
+function reinitCache2(){	
+	return Promise.all([
+						reinitGroupsCache2(),
+						reinitTransactionsCache2(),
+						reinitUsersCache2(),
+						reinitMembershipsCache2()]);
+}
+function reloadAll(){	
+	return Promise.all([
+						updateTransactions2(),
+						updateFriends2(),
+						updateGroups2(),
+						updateMemberships2()]);
 }
 function reinitCache(onready){
 	onready=onready||function(){};
@@ -260,7 +326,8 @@ function dbinit(){
 		}
 	} ).then( function ( s ) {
 		dbserver = s	
-		reinitCache(pageReady);
+		//reinitCache(pageReady);
+		reinitCache2().then(pageReady);
 	} );
 }
 
@@ -275,16 +342,26 @@ function array2form(data,name,arr){
 }
 //unused
 function SetPermission(indata){
-	post({
-				path:"Groups/SetPermission/",
-				data:indata,
-				success: function(data){
-					updateMemberships();
-				},
-				error: function(data){
-					alert(JSON.stringify(data));
-				}
-		});		       
+	return post2({
+		path:"Groups/SetPermission/",
+		data:indata,
+	}).then(function(data){
+		return updateMemberships2();
+	}).catch(function(data){
+		alert(JSON.stringify(data));		
+	});		       
+}
+function MakeTransaction2(indata){
+	array2form(indata,"Transactions",indata.Transactions);
+	delete indata.Transactions;
+	
+	return post2({
+		path:"Groups/MakeTransaction/",
+		data:indata,
+	}).then(()=>updateTransactions2())
+	.catch(function(data){
+		alert(JSON.stringify(data));
+	});		       
 }
 function MakeTransaction(indata,onsuccess){
 	onsuccess=onsuccess||function(data){updateTransactions();};
@@ -293,13 +370,13 @@ function MakeTransaction(indata,onsuccess){
 	delete indata.Transactions;
 	
 	post({
-				path:"Groups/MakeTransaction/",
-				data:indata,
-				success: onsuccess,
-				error: function(data){
-					alert(JSON.stringify(data));
-				}
-		});		       
+			path:"Groups/MakeTransaction/",
+			data:indata,
+			success: onsuccess,
+			error: function(data){
+				alert(JSON.stringify(data));
+			}
+	});		       
 }
 //unused
 function AddUserToGroup(indata){
@@ -452,6 +529,132 @@ function updateTransactions(onsuccess){
 			alert(JSON.stringify(data));
 		}
 	});		       
+}
+function updateFriends2(){
+	
+	return 	post2({
+			path:"users/getfriends/",
+		}).then(function(data){
+			allasync=[];
+			for(i=0;i<data.Output.length;i++)
+				allasync.push(dbserver.Users.update(data.Output[i]).then( function ( item ) {
+					// item stored
+					console.log("user stored:");
+					console.log(item);
+					
+				}));
+			return Promise.all(allasync).then(function() {
+				return reinitUsersCache2();
+			});
+		}).catch(function(data){
+			alert(JSON.stringify(data));
+		});
+}
+function updateGroups2(){
+	
+	return post2({
+		path:"groups/getall/",
+	}).then(function(data){
+		allasync=[];
+		for(i=0;i<data.Output.length;i++)
+			allasync.push(dbserver.Groups.update(data.Output[i]).then( function ( item ) {
+				console.log("group stored:");
+				console.log(item);
+			}));
+		return Promise.all(allasync).then(function() {
+			return reinitGroupsCache2();
+		});
+	}).catch(function(data){
+		alert(JSON.stringify(data));
+	});
+			       
+}
+function updateMemberships2(){
+	
+	return post2({
+		path:"groups/GetMemberships/",
+	}).then(function(data){
+		allasync=[];						
+		for(i=0;i<data.Output.length;i++)
+			allasync.push(dbserver.Memberships.update(data.Output[i]).then( function ( item ) {
+				// item stored
+				console.log("membership stored:");
+				console.log(item);
+			}).catch(function(item,a){
+				console.error(item);
+				console.error(a);
+			}));
+			
+		return Promise.all(allasync).then(function() {
+			return reinitMembershipsCache2();
+		});		
+	}).catch(function(data){
+		alert(JSON.stringify(data));
+	});
+	       
+}
+function updateTransactions2(){
+	laststartid=window.localStorage['laststartid']||0;	
+	return post2({
+		path:"groups/GetAllTransactions/",
+	}).then(function(data){
+		allasync=[];
+		for(i=0;i<data.Output.Transactions.length;i++){
+			var data2=data.Output.Transactions[i];
+			for(j=0;j<data2.TransactionDetails.length;j++)
+				allasync.push(dbserver.TransactionDetails.update(data2.TransactionDetails[j]).then( function ( item ) {
+					console.log("TransactionDetails stored:");
+					console.log(item);				
+				}));
+			delete data2.TransactionDetails;
+			allasync.push(dbserver.Transactions.update(data2).then( function ( item ) {	
+				console.log("Transaction stored:");
+				console.log(item);
+			}));
+		}
+		
+		return Promise.all(allasync).then(function() {
+			if(data.Output.Transactions.length)
+				window.localStorage['laststartid']=data.Output.Transactions[data.Output.Transactions.length-1].Id;
+			return reinitTransactionsCache2();
+		});
+			
+	}).catch(function(data){
+		alert(JSON.stringify(data));
+	});		       
+}
+function post2(options){
+	path=options.path;
+	data=options.data||{};
+	
+	if(window.localStorage['sessionkey'])
+		data.SessionKey=window.localStorage['sessionkey'];	
+	
+	return new Promise((success,error)=>{
+	
+	//success=options.success||function(res){alert(res);};
+	//error=options.error||function(res){alert(res);};
+	$$.ajax({
+			type: "POST",
+			url: "http://clouddong.ml/api/"+path,
+			//url: "http://localhost:3400/api/"+path,
+			data: data,
+			dataType:'json',
+			success: function(res, textStatus, jqXHR ){
+				if(res.Type==1)
+					success(res);
+				else
+					error(res);				
+			},
+			error: function(xhr, ajaxOptions, thrownError){
+				console.error(xhr, ajaxOptions, thrownError);
+				if(xhr.status==401)
+					window.localStorage['sessionkey']="";
+				error({xhr:xhr, ajaxOptions:ajaxOptions, thrownError:thrownError});	
+			},
+			contentType:"application/x-www-form-urlencoded"
+		});		
+	});
 }
 function post(options){
 	path=options.path;
@@ -692,16 +895,14 @@ myApp.onPageInit('newTransaction', function (page) {
 		if(sumCost-sumPayment!=0){alert("جمع پرداختی و هزینه برابر نیست. اختلاف:"+Math.abs(sumCost-sumPayment));	return;	}
 			
 			
-	MakeTransaction({
-				GroupId:groupid,
-				Description:Description,Type:Type,DateTimeFa:DateTimeFa,
-				Transactions:Transactions
-			}, function(data){
-				updateTransactions(function(){
-					alert("اطلاعات ثبت شد.");
-					mainView.loadPage('dash.html');
-			});
-		});
+	MakeTransaction2({
+		GroupId:groupid,
+		Description:Description,Type:Type,DateTimeFa:DateTimeFa,
+		Transactions:Transactions
+	}).then(function(data){
+		alert("اطلاعات ثبت شد.");
+		mainView.loadPage('dash.html');
+	});
 	
   });
 });
@@ -721,15 +922,18 @@ myApp.onPageInit('enterOTP', function (page) {
 					if(data.Output.SessionKey){
 						window.localStorage['sessionkey']=data.Output.SessionKey;
 						window.localStorage['userid']=data.Output.User.Id;
+						reloadAll().then(()=>mainView.loadPage('dash.html'));
+						/*
 						dbserver.Users.update(data.Output.User).then( function ( item ) {
 							console.log("stored:");
 							console.log(item);
 							updateFriends(function(){
 								updateGroups(function(){
-									mainView.loadPage('dash.html');		
+									mainView.loadPage('dash.html')
 								});
 							});
-						});						
+						});
+						*/
 					}else{
 						alert(data);
 					}
@@ -750,23 +954,24 @@ myApp.onPageInit('newGroup', function (page) {
 	GroupName=$$(page.container).find('#GroupName').val();
 	if(!GroupName){alert("نام گروه را درست وارد کنید");return;}
 	
-	post({
+	post2({
 		path:'Groups/Create',
-		data:{
-			Name:GroupName
-		},
-		success: function(data){
-			//updateGroups();
-			updateGroups(function(){
-				updateMemberships(function(){
-					alert("اطلاعات ثبت شد.");
-					mainView.loadPage('groups.html');
-				});
+		data:{Name:GroupName}
+	}).then(function(data){
+		//updateGroups();
+		Promise.all([updateGroups2(),updateMemberships2()]).then(()=>{
+			alert("اطلاعات ثبت شد.");
+			mainView.loadPage('groups.html');
+		});
+		/*updateGroups(function(){
+			updateMemberships(function(){
+				alert("اطلاعات ثبت شد.");
+				mainView.loadPage('groups.html');
 			});
-		},
-		error: function(data){
-			alert(JSON.stringify(data));
-		}
+		});
+		*/
+	}).catch(function(data){
+		alert(JSON.stringify(data));
 	});
   });
 });
@@ -797,25 +1002,20 @@ myApp.onPageInit('editname', function (page) {
 	if(!LastName){alert("نام خانوادگی را درست وارد کنید");return;}
 	if(!validateEmail(Email)){alert("ایمیل را درست وارد کنید");return;}
 	if(!validateDateTimeFa(BirthdayFa*1000000)){alert("تاریخ تولد را درست وارد کنید");return;}
-	post({
+	post2({
 		path:'users/update',
-		data:{
-			FirstName:FirstName,LastName:LastName,Phone:users[me()].Phone,Male:Male,Email:Email,BirthdayFa:BirthdayFa
-		},
-		success: function(data){
-			//updateFriends();
-			dbserver.Users.update(data.Output).then(function(){
-				reinitUsersCache(function(){
-					alert("اطلاعات ثبت شد.");
+		data:{FirstName:FirstName,LastName:LastName,Phone:users[me()].Phone,Male:Male,Email:Email,BirthdayFa:BirthdayFa}
+	}).then(function(data){
+		//updateFriends();
+		dbserver.Users.update(data.Output).then(function(){
+			reinitUsersCache2().then(function(){
+				alert("اطلاعات ثبت شد.");
 				mainView.loadPage('dash.html');
-				});
-				
 			});
-			//mainView.loadPage('dash.html');
-		},
-		error: function(data){
-			alert(JSON.stringify(data));
-		}
+		});
+		//mainView.loadPage('dash.html');
+	}).catch(function(data){
+		alert(JSON.stringify(data));	
 	});
   });
 });
@@ -849,17 +1049,20 @@ myApp.onPageInit('dash', function (page) {
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
+		reloadAll().then(()=>init_updateDashList(virtualList));
+		/*
 		updateTransactions(function(){
 			updateFriends(function(){
 				updateGroups(function(){
 					updateMemberships(function(){
-						initorupdateDashList(virtualList);
+						init_updateDashList(virtualList);
 					});
 				});
 			});
 		});
+		*/
     });
-	initorupdateDashList(virtualList);
+	init_updateDashList(virtualList);
 		
 });
 myApp.onPageInit('showTransactions', function (page) {
@@ -892,12 +1095,12 @@ myApp.onPageInit('showTransactions', function (page) {
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
-		updateTransactions(function(){
-			initorupdateTransactionList(virtualList,groupid);
+		updateTransactions2().then(function(){
+			init_updateTransactionList(virtualList,groupid);
 		});
 
     });
-	initorupdateTransactionList(virtualList,groupid);
+	init_updateTransactionList(virtualList,groupid);
 		
 });
 ////////////////////////////////////////////////////////////////////////////////
@@ -930,12 +1133,12 @@ myApp.onPageInit('groups', function (page) {
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
-		updateTransactions(function(){
-			initorupdateGroupsList(virtualList);
+		updateTransactions2().then(function(){
+			init_updateGroupsList(virtualList);
 		});
 
     });
-	initorupdateGroupsList(virtualList);
+	init_updateGroupsList(virtualList);
 		
 });
 myApp.onPageInit('add-member', function (page) {
@@ -943,23 +1146,25 @@ myApp.onPageInit('add-member', function (page) {
         var groupid=page.query.groupid;
 		var phone = $$(page.container).find('input[name="phone"]').val();
 		if(validatePhone(phone))
-			post({
+			post2({
 				path:"Groups/AddUser",
 				data:{ GroupId:groupid,Phone: phone},
-				success: function(data){
+			}).then(function(data){
 					//alert(data.Message);
-					updateMemberships(function(){
-						updateFriends(function(){
-							alert("به گروه اضافه شد.");
-							mainView.loadPage('group.html?id='+groupid);
-						});
+				Promise.all([updateMemberships2(),updateFriends2()]).then(function(){
+						alert("به گروه اضافه شد.");
+						mainView.loadPage('group.html?id='+groupid);
 					});
-					
-					//
-				},
-				error: function(data){
+				/*updateMemberships(function(){
+					updateFriends(function(){
+						alert("به گروه اضافه شد.");
+						mainView.loadPage('group.html?id='+groupid);
+					});
+				});
+				*/
+				//
+			}).catch(function(data){
 					alert(JSON.stringify(data));
-				}
 			});		       
 		else
 			alert("شماره وارد شده صحیح نیست.");
@@ -989,8 +1194,9 @@ myApp.onPageInit('group-members', function (page) {
         // Item height
         height: 63,
     });
-    initOrUpdate=function(){
+    init_update=function(){
 		dbserver.Memberships.query().filter().execute().then(function(results){
+			virtualList.deleteAllItems();
 			for (var i = 0; i < results.length; i++) {						
 				res=results[i];
 				if(res.GroupId!=groupid)
@@ -1008,20 +1214,25 @@ myApp.onPageInit('group-members', function (page) {
 					if(!(item.FirstName+item.LastName).trim())
 						item.FirstName="بی نام";
 				virtualList.prependItem(item);
-			}		
+			}
+			myApp.pullToRefreshDone();			
 		});
 	}
 	var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
+		Promise.all([updateMemberships2(),updateFriends2()]).then(function(){
+			init_update();
+		});
+		/*
 		updateFriends(function(){
 			updateMemberships(function(){
-				initOrUpdate();
+				init_update();
 			});
 		});
-
+		*/
     });
-	initOrUpdate();
+	init_update();
 });
 
 myApp.onPageInit('transaction', function (page) {

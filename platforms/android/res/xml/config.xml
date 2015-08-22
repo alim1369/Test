@@ -6,7 +6,7 @@
         <param name="onload" value="true" />
     </feature>
     <allow-intent href="market:*" />
-    <name>دنگ ابري</name>
+    <name>CloudDong</name>
     <description>
         دنگ ابري
     </description>
