@@ -5379,7 +5379,7 @@
                 }
         
                 if (updatableScroll) {
-                    vl.ul.css({height: listHeight + 'px'});
+                    //vl.ul.css({height: listHeight + 'px'});
                 }
             };
         
@@ -5479,10 +5479,10 @@
                 // Update list height with not updatable scroll
                 if (!updatableScroll) {
                     if (dynamicHeight) {
-                        vl.ul[0].style.height = heightBeforeLastItem + 'px';
+                        //vl.ul[0].style.height = heightBeforeLastItem + 'px';
                     }
                     else {
-                        vl.ul[0].style.height = i * vl.params.height / vl.params.cols + 'px';
+                      //  vl.ul[0].style.height = i * vl.params.height / vl.params.cols + 'px';
                     }
                 }
                     

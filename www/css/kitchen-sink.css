@@ -1,3 +1,24 @@
+.list-block .item-title {
+  white-space: normal !important;
+}
+.list-block li{
+	display:inline;
+
+	}
+	
+	.list-block .item-content{
+	
+	}
+
+i.icon.icon-transaction {
+  width: 30px;
+  height: 30px;
+  background-image: url("../img/icon/transaction.png");
+}
+
+.list-block li{
+	height:60px;
+}
 .cost{
     background-color: lightyellow !important;
 }

@@ -5,16 +5,67 @@ var transactions = {};
 var groups = {};
 var users = {};
 var memberships = {};
+var phones = {};
 
+function isDesktop(){
+	/*if ( window.location.protocol === "file:" ) {
+		alert("Running on PhoneGap!");
+	} else {
+		alert("Running NOT on PhoneGap!");
+	}*/
+	return !(window.location.protocol === "file:");
+}
+function dateToLong(pd,hastime){
+	window.formatPersian=false;
+	var result;
+	if(hastime)
+		result =pd.format("YYYYMMDDHHmmss");
+	else result=pd.format("YYYYMMDD");
+	window.formatPersian=true;
+	return result;
+}
 function formatDate(pd,hastime){
 	if(hastime)
 		return pd.format("dddd DD MMMM YYYY ساعت H:mm")
 	return pd.format("dddd DD MMMM YYYY")
 }
+function toStringUser(owneruser,template){
+	template=template||"a";
+	var result=""
+	if(template=="n"||template=="a"){
+		result=owneruser.FirstName+" "+owneruser.LastName;
+		if(result.trim().length==0){
+			console.log("checking user phones "+owneruser.Phone+" "+phones[owneruser.Phone])
+			if(phones[owneruser.Phone])
+				result=phones[owneruser.Phone].Name||"";
+		}	
+	}
+	if(template=="a")
+		result+=" ";
+	
+	if(template=="p"||template=="a"||result.trim().length==0)
+		result+=("0"+owneruser.Phone).toPersianDigit();
+	return result;
+}
+function getUserPic(user){
+	
+	if(phones[user.Phone]&&phones[user.Phone].Photo){
+		console.log("checking photo phones "+user.Phone+" "+phones[user.Phone].Photo)
+		return phones[user.Phone].Photo;
+	}
+	
+	return "img/user/"+(user.Male?"":"fe")+"male.png";
+}
 Template7.registerHelper('groups', function (id,property,topersian) {
 	if(topersian=="persian")
 		return (groups[id][property]+'').toPersianDigit();
 	return groups[id][property];
+});
+Template7.registerHelper('users', function (id,property,topersian) {
+	id=id||me();
+	if(topersian=="persian")
+		return (users[id][property]+'').toPersianDigit();
+	return users[id][property];
 });
 Template7.registerHelper('me', function (property,topersian) {
 	if(topersian=="persian")
@@ -26,6 +77,8 @@ Template7.registerHelper('pd', function (property) {
     return (property+'').toPersianDigit();
 });
 Template7.registerHelper('money', function (property) {
+	if(property==undefined)
+		return '';
 	if(property>0)
 		return ('+'+property).toPersianDigit();
     return (property+'').toPersianDigit();
@@ -40,9 +93,10 @@ var myApp = new Framework7({
 	modalPreloaderTitle:'در حال بارگذاری',
 	init: false,
 //	cache:false,
-	pushState: true,
+	//pushState: isDesktop(),
     animateNavBackIcon: true,
-	tapHold:true,
+	//tapHold:true,
+	//tapHoldPreventClicks:true,
 	sortable:false,
 	swipeout:false,
 	swipePanelOnlyClose:true,
@@ -68,19 +122,59 @@ var myApp = new Framework7({
 	
 });
   
-document.addEventListener("deviceready", function () {
-        document.addEventListener("backbutton", function (e) {
-            e.preventDefault();
-        }, false );
-}, false);
+
+function onDeviceReady() {
+	initPhones().then(function(){}).catch(function(){console.error("contact init error");});
+	document.addEventListener("backbutton", function (e) { 
+			
+		e.preventDefault(); 
+		
+		modals=$$(".modal-info");
+		if(modals.length){
+			myApp.closeModal('.modal-info');
+			return ;
+		}
+		
+		//if(keyboard is open){
+			//close keyboard
+		//}
+		
+		if (Keyboard.isVisible) {
+			Keyboard.hide();
+			return;
+		}	
+		
+		if(myApp.views[0]&&myApp.views[0].activePage&&myApp.views[0].activePage.name=="dash"){
+			if(confirm("آیا میخواهید خارج شوید؟"))
+				navigator.app.exitApp();
+			return;
+		}
+		$$(".back").click();
+		
+	}, false ); 
+} 
+document.addEventListener("deviceready", onDeviceReady, false); 
+  
+//document.addEventListener("deviceready", function () {
+  //      document.addEventListener("backbutton", function (e) {
+//            e.preventDefault();
+    //    }, false );
+//}, false);
     
+	
+//};
+
+
+	
 function init_updateTransactionList(virtualList,groupid){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
 	console.log("lastId="+lastId);
-	
+	if(lastId==0)
+		virtualList.deleteAllItems();
 	dbserver.Transactions.query().filter().execute().then(function(results){
+		
 		for (var i = 0; i < results.length; i++) {
 			
 			transaction=results[i];
@@ -88,63 +182,84 @@ function init_updateTransactionList(virtualList,groupid){
 				continue;
 			if(lastId>=transaction.Id)
 				continue;
+			if(groups[groupid].Status!=1)
+				continue;
 			item={
+					Id:transaction.Id,
 					TransactionId:transaction.Id,
 					Type:transaction.Type,
 					Description: transaction.Description,
 					Group:groups[transaction.GroupId].Name,
 					GroupId:transaction.GroupId,
 					DateTimeFa:formatDate(persianDate.fromLong(transaction.DateTimeFa),true),
-					Amount:''
+					Amount:transaction.Amount
 				};
 			virtualList.prependItem(item);
 		}		
-
-			myApp.pullToRefreshDone();
-		});
+		if(!virtualList.items.length)
+			$$('.searchbar-not-found').show();
+		else
+			$$('.searchbar-not-found').hide();
+	
+		myApp.pullToRefreshDone();
+	});
 }
 function init_updateGroupsList(virtualList){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
 	console.log("lastId="+lastId);
-	
+	if(lastId==0)
+		virtualList.deleteAllItems();
 	dbserver.Groups.query().filter().execute().then(function(results){
+		
 		for (var i = 0; i < results.length; i++) {
 			
 			res=results[i];
 			if(lastId>=res.Id)
 				continue;
+			if(res.Status!=1)
+				continue;
 			transaction=transactions[res.TransactionId];
 			item={
 					Id:res.Id,
-					MyCash: memberships[res.Id][me()].Cash,
+					MyCash: memberships[res.Id]?memberships[res.Id][me()].Cash:'',
 					Name:res.Name,
 					MySettingsFlags:res.MySettingsFlags,
+					Permission:memberships[res.Id]?memberships[res.Id][me()].Permission:3,
 					GroupPic:((res.Id%4)+1)+""
 				};
 				
 			virtualList.prependItem(item);
 		}		
+		if(!virtualList.items.length)
+			$$('.searchbar-not-found').show();
+		else
+			$$('.searchbar-not-found').hide();
 
-			myApp.pullToRefreshDone();
-		});
-
-	
-
+		myApp.pullToRefreshDone();
+	});
 }
-function init_updateDashList(virtualList){
+function init_updateUserTransacrionList(userid,groupid,virtualList){
 	lastId=0;
 	if(virtualList.items.length)
 		lastId=virtualList.items[0].Id;
+	if(lastId==0)
+		virtualList.deleteAllItems();
+	
 	console.log("lastId="+lastId);
 
-	dbserver.TransactionDetails.query().filter('UserId',me()).execute().then(function(results){
+	dbserver.TransactionDetails.query().filter('UserId',userid).execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {
 			res=results[i];
 			if(lastId>=res.Id)
 				continue;
+			
 			transaction=transactions[res.TransactionId];
+			if(groupid&&transaction.GroupId!=groupid)
+				continue;
+			if(groups[transaction.GroupId].Status!=1)
+				continue;
 			item={
 					TransactionId:res.TransactionId,
 					Id:res.Id,
@@ -156,12 +271,17 @@ function init_updateDashList(virtualList){
 				};
 				
 			virtualList.prependItem(item);
-		}		
-			myApp.pullToRefreshDone();
-		});
+		}
+		if(!virtualList.items.length)
+			$$('.searchbar-not-found').show();
+		else
+			$$('.searchbar-not-found').hide();
+
+		myApp.pullToRefreshDone();
+	});
 }
 function reinitTransactionsCache2(){
-	return new Promise((onready)=>{
+	return new Promise(function(onready){
 		console.log("re-initing Transactions Cache");
 		dbserver.Transactions.query().filter().execute().then(function(results){
 			for (var i = 0; i < results.length; i++) {
@@ -183,7 +303,7 @@ function reinitTransactionsCache(onready){
 	});
 }
 function reinitUsersCache2(){
-	return new Promise((onready)=>{
+	return new Promise(function(onready){
 		console.log("re-initing Users Cache");
 		dbserver.Users.query().filter().execute().then(function(results){
 			for (var i = 0; i < results.length; i++) {
@@ -205,7 +325,7 @@ function reinitUsersCache(onready){
 	});
 }
 function reinitGroupsCache2(){
-	return new Promise((onready)=>{
+	return new Promise(function(onready){
 		console.log("re-initing Groups Cache");
 		dbserver.Groups.query().filter().execute().then(function(results){
 			for (var i = 0; i < results.length; i++) {
@@ -229,7 +349,7 @@ function reinitGroupsCache(onready){
 }
 function reinitMembershipsCache2(){
 //	onready=onready||function(){};
-	return new Promise((onready)=>{
+	return new Promise(function(onready){
 		console.log("re-initing Memberships Cache");
 		dbserver.Memberships.query().filter().execute().then(function(results){
 			for (var i = 0; i < results.length; i++) {
@@ -259,7 +379,9 @@ function reinitCache2(){
 						reinitGroupsCache2(),
 						reinitTransactionsCache2(),
 						reinitUsersCache2(),
-						reinitMembershipsCache2()]);
+						reinitMembershipsCache2(),
+					
+						]);
 }
 function reloadAll(){	
 	return Promise.all([
@@ -278,11 +400,14 @@ function reinitCache(onready){
 		});
 	});
 }
+
+
 function dbinit(){
-	window.shimIndexedDB && window.shimIndexedDB.__useShim();
+	console.log("initing db");
+	//window.shimIndexedDB && window.shimIndexedDB.__useShim();
 	db.open( {
 		server: 'clouddong',
-		version: 1,
+		version: 10,
 		schema: {
 			Users: {
 				key: { keyPath: 'Id'},
@@ -328,6 +453,7 @@ function dbinit(){
 		dbserver = s	
 		//reinitCache(pageReady);
 		reinitCache2().then(pageReady);
+		
 	} );
 }
 
@@ -348,7 +474,8 @@ function SetPermission(indata){
 	}).then(function(data){
 		return updateMemberships2();
 	}).catch(function(data){
-		alert(JSON.stringify(data));		
+		console.error(JSON.stringify(data));		
+		myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});		       
 }
 function MakeTransaction2(indata){
@@ -358,9 +485,10 @@ function MakeTransaction2(indata){
 	return post2({
 		path:"Groups/MakeTransaction/",
 		data:indata,
-	}).then(()=>updateTransactions2())
-	.catch(function(data){
-		alert(JSON.stringify(data));
+	}).then(function(){
+		updateTransactions2();
+	}).catch(function(data){
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});		       
 }
 function MakeTransaction(indata,onsuccess){
@@ -374,7 +502,8 @@ function MakeTransaction(indata,onsuccess){
 			data:indata,
 			success: onsuccess,
 			error: function(data){
-				alert(JSON.stringify(data));
+				myApp.hideIndicator();
+				console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 			}
 	});		       
 }
@@ -393,7 +522,7 @@ function AddUserToGroup(indata){
 				});
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 });		       
 }
@@ -411,7 +540,7 @@ function CreateGroup(indata){
 				});
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 	});		       
 }
@@ -435,7 +564,7 @@ function updateFriends(onsuccess){
 			});
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 	});		       
 }
@@ -460,7 +589,7 @@ function updateGroups(onsuccess){
 			});
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 	});		       
 }
@@ -488,7 +617,7 @@ function updateMemberships(onsuccess){
 			});		
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 	});		       
 }
@@ -526,7 +655,7 @@ function updateTransactions(onsuccess){
 				
 		},
 		error: function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		}
 	});		       
 }
@@ -535,6 +664,7 @@ function updateFriends2(){
 	return 	post2({
 			path:"users/getfriends/",
 		}).then(function(data){
+			console.log("users:",data);
 			allasync=[];
 			for(i=0;i<data.Output.length;i++)
 				allasync.push(dbserver.Users.update(data.Output[i]).then( function ( item ) {
@@ -547,7 +677,7 @@ function updateFriends2(){
 				return reinitUsersCache2();
 			});
 		}).catch(function(data){
-			alert(JSON.stringify(data));
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 		});
 }
 function updateGroups2(){
@@ -565,7 +695,7 @@ function updateGroups2(){
 			return reinitGroupsCache2();
 		});
 	}).catch(function(data){
-		alert(JSON.stringify(data));
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});
 			       
 }
@@ -589,24 +719,29 @@ function updateMemberships2(){
 			return reinitMembershipsCache2();
 		});		
 	}).catch(function(data){
-		alert(JSON.stringify(data));
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});
 	       
 }
 function updateTransactions2(){
-	laststartid=window.localStorage['laststartid']||0;	
+	var laststartid=window.localStorage['laststartid']||0;	
 	return post2({
 		path:"groups/GetAllTransactions/",
 	}).then(function(data){
-		allasync=[];
-		for(i=0;i<data.Output.Transactions.length;i++){
+		var allasync=[];
+		for(var i=0;i<data.Output.Transactions.length;i++){
 			var data2=data.Output.Transactions[i];
-			for(j=0;j<data2.TransactionDetails.length;j++)
+			var cost=0;
+			for(var j=0;j<data2.TransactionDetails.length;j++){
+				if(data2.TransactionDetails[j].Amount>0)
+					cost+=data2.TransactionDetails[j].Amount;
 				allasync.push(dbserver.TransactionDetails.update(data2.TransactionDetails[j]).then( function ( item ) {
 					console.log("TransactionDetails stored:");
 					console.log(item);				
 				}));
+			}
 			delete data2.TransactionDetails;
+			data2.Amount=cost;
 			allasync.push(dbserver.Transactions.update(data2).then( function ( item ) {	
 				console.log("Transaction stored:");
 				console.log(item);
@@ -620,17 +755,17 @@ function updateTransactions2(){
 		});
 			
 	}).catch(function(data){
-		alert(JSON.stringify(data));
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});		       
 }
 function post2(options){
-	path=options.path;
-	data=options.data||{};
+	var path=options.path;
+	var data=options.data||{};
 	
 	if(window.localStorage['sessionkey'])
 		data.SessionKey=window.localStorage['sessionkey'];	
 	
-	return new Promise((success,error)=>{
+	return new Promise(function(success,error){
 	
 	//success=options.success||function(res){alert(res);};
 	//error=options.error||function(res){alert(res);};
@@ -641,30 +776,40 @@ function post2(options){
 			data: data,
 			dataType:'json',
 			success: function(res, textStatus, jqXHR ){
+				myApp.hideIndicator();
 				if(res.Type==1)
 					success(res);
-				else
-					error(res);				
+				else{
+					myApp.alert("خطای شماره :"+res.Type);
+					//error(res);	
+				}
+				
 			},
 			error: function(xhr, ajaxOptions, thrownError){
-				console.error(xhr, ajaxOptions, thrownError);
+				console.error(JSON.stringify(xhr)+ JSON.stringify(ajaxOptions)+ JSON.stringify(thrownError));
 				if(xhr.status==401)
 					window.localStorage['sessionkey']="";
+				myApp.hideIndicator();
+				if(xhr.status==500)
+					myApp.alert("خطا در سمت سرور.");
 				error({xhr:xhr, ajaxOptions:ajaxOptions, thrownError:thrownError});	
+			},
+			ajaxComplete:function(xhr, status){
+				myApp.hideIndicator();
 			},
 			contentType:"application/x-www-form-urlencoded"
 		});		
 	});
 }
 function post(options){
-	path=options.path;
-	data=options.data||{};
+	var path=options.path;
+	var data=options.data||{};
 	
 	if(window.localStorage['sessionkey'])
 		data.SessionKey=window.localStorage['sessionkey'];	
 	
-	success=options.success||function(res){alert(res);};
-	error=options.error||function(res){alert(res);};
+	var success=options.success||function(res){myApp.alert(res);};
+	var error=options.error||function(res){myApp.alert(res);};
 	$$.ajax({
 			type: "POST",
 			url: "http://clouddong.ml/api/"+path,
@@ -714,7 +859,55 @@ function needLogin(page){
 	
 	return true;
 }
+function initPhones(){
+	return new Promise(function(success,error){
+		console.log("initing Phones");
+		if(!navigator.contacts){
+			success();
+			return;
+		}
+		
+		
+		var options = new ContactFindOptions();
+			options.filter="";
+			options.multiple = true;
+			var filter = ['displayName', 'name'];
+		
+		navigator.contacts.find(filter, function(contacts) {	
+			for (var i = 0; i < contacts.length; i++) {
+				if(contacts[i].phoneNumbers)
+					for (var j=0;j<contacts[i].phoneNumbers.length;j++){
+						var phonestr=contacts[i].phoneNumbers[j].value.trim().replace("+98","");
+						var phone=0;
+						for(var k=0;k<phonestr.length;k++)
+							if(phonestr[k]>='0'&&phonestr[k]<='9')
+								phone=phone*10+parseInt(phonestr[k]);
+						
+						if(validatePhone('0'+phone)){
+							var photo="";
+							if(contacts[i].photos&&contacts[i].photos.length)
+								photo=contacts[i].photos[0].value;
+							phones[phone]={
+								Name:contacts[i].displayName,
+								Photo:photo
+							};
+				//			console.log(phone+" "+phones[phone]);
+						}//else
+					//		console.log(phonestr);
+					}
+				
+			}
+			success();
+			//callback();
+		}, function(contactError) {
+			myApp.alert('onError! contacts');
+			error(contactError);
+		}, options);
+	
+	});
+}
 function pageReady(){
+
 // Add main view
 var mainView = myApp.addView('.view-main', {
     // Enable Dynamic Navbar for this view
@@ -746,6 +939,7 @@ myApp.onPageBack('home',function (page) {
 myApp.onPageInit('home',function (page) {
   //console.log(page.name + ' initialized'); 
    //mainView.loadPage('dash.html');
+   
 });
 mainView.router.loadPage('dash.html');
 
@@ -759,43 +953,43 @@ myApp.onPageInit('login', function (page) {
 				path:"users/createotp/",
 				data:{ Phone: phone},
 				success: function(data){
-					alert(data.Message);
+					myApp.alert(data.Message);
 					mainView.loadPage('enterOTP.html?phone='+phone);
 				},
 				error: function(data){
-					alert(JSON.stringify(data));
+					console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 				}
 			});		       
 		else
-			alert("شماره وارد شده صحیح نیست.");
+			myApp.alert("شماره وارد شده صحیح نیست.");
     });
 });
 
 myApp.onPageInit('newTransaction', function (page) {
-	groupid=page.query.groupid;
-	defaultvalue = persianDate();
-	template='<li><label class="label-checkbox item-content">'+
+	
+	var groupid=page.query.groupid;
+	var defaultvalue = persianDate();
+	var template='<li><label class="label-checkbox item-content">'+
 			'<input type="checkbox" class="users-checkbox" value="{{UserId}}">'+
 			'<div class="item-media"><i class="icon icon-form-checkbox"></i></div>'+
               '<div class="item-inner">'+
-                '<div class="item-title label">{{UserName}}</div>'+
-                '<div class="item-input">'+
+                //'<div class="item-title label">{{UserName}}</div>'+
+                //'<div class="item-input">'+
 					'<div class="row">'+
-						'<div class="col-50"><input type="number" class="cost" placeholder="هزینه"  id="Cost{{UserId}}" data-userid="{{UserId}}" /></div>'+
-						'<div class="col-50"><input type="number" class="payment" placeholder="پرداختی" id="Payment{{UserId}}" data-userid="{{UserId}}" /></div>'+
+						'<div class="col-50">{{UserName}}</div>'+
+						'<div class="col-25"><input type="number" class="cost" placeholder="دنگ"  id="Cost{{UserId}}" data-userid="{{UserId}}" /></div>'+
+						'<div class="col-25"><input type="number" type="calculator" class="payment" placeholder="پرداختی" id="Payment{{UserId}}" data-userid="{{UserId}}" /></div>'+
 					'</div>'+
-                '</div>'+
+                //'</div>'+
               '</div>'+
             '</label></li>';
-	createPicker('#DateTimeFa','#DateTimeFaDisplay',defaultvalue,true);
+	createPicker('#DateTimeFa','#DateTimeFaDisplay',defaultvalue,true,true);
 	// Inline date-time
-	compiledTemplate = Template7.compile(template);
-	target=$$("#userPayments");
-	payemntsitem="";
+	var compiledTemplate = Template7.compile(template);
+	var target=$$("#userPayments");
+	var payemntsitem="";
 	for (var userid in memberships[groupid]){
-		username=users[userid].FirstName+" "+users[userid].LastName;
-		if(username.trim()=="")
-			username=("0"+users[userid].Phone).toPersianDigit();
+		var username=toStringUser(users[userid],'n');
 		
 		target.prepend(compiledTemplate({
 			UserName:username,
@@ -803,11 +997,11 @@ myApp.onPageInit('newTransaction', function (page) {
 		}));
 	} 	
 	
-	recalculateTotalCost=function (e) { 
-		sum=0;
+	var recalculateTotalCost=function (e) { 
+		var sum=0;
 		$$(".cost").each(function(i,n){
-			val=$$(n).val()||0;
-			intval=parseInt(val,10);
+			var val=$$(n).val()||0;
+			var intval=parseInt(val,10);
 			//console.log(val +" "+intval);
 			if(intval!=val||intval<=0){
 				$$(n).val('');
@@ -819,10 +1013,10 @@ myApp.onPageInit('newTransaction', function (page) {
 	};
 	$$('.cost').on('keyup keydown change', recalculateTotalCost);	
     $$('.payment').on('keyup keydown change', function (e) { 
-		sum=0;
+		var sum=0;
 		$$(".payment").each(function(i,n){
-			val=$$(n).val()||0;
-			intval=parseInt(val,10);
+			var val=$$(n).val()||0;
+			var intval=parseInt(val,10);
 			//console.log(val +" "+intval);
 			if(intval!=val||intval<=0){
 				$$(n).val('');
@@ -832,26 +1026,27 @@ myApp.onPageInit('newTransaction', function (page) {
 		});
 		$$("#sumPayment").html((sum+'').toPersianDigit());
 	});	
+	//enableScoralToInput();
 	$$(page.container).find('#equalDivide').on('click', function () {
-		sum=0;
+		var sum=0;
 		$$(".payment").each(function(i,n){
-			val=$$(n).val()||0;
-			intval=parseInt(val,10);
+			var val=$$(n).val()||0;
+			var intval=parseInt(val,10);
 			if(intval!=val||intval<=0)
 				return;
 			sum += intval; 
 		});
 		if(sum==0){
-			alert("لطفا پرداختی ها را وارد کنید.");
+			myApp.alert("لطفا پرداختی ها را وارد کنید.");
 			return;
 		}
-		checkeduser=$$(".users-checkbox:checked");
+		var checkeduser=$$(".users-checkbox:checked");
 		if(checkeduser.length==0){
-			alert("لطفا افراد مورد نظر را انتخاب کنید.");
+			myApp.alert("لطفا افراد مورد نظر را انتخاب کنید.");
 			return;
 		}
 			
-		dong=Math.floor(sum/checkeduser.length);
+		var dong=Math.floor(sum/checkeduser.length);
 		checkeduser.each(function(i,v){
 			
 			if(i==checkeduser.length-1)
@@ -862,37 +1057,85 @@ myApp.onPageInit('newTransaction', function (page) {
 		});
 		recalculateTotalCost();
 	});
+	
+	
+	
+	var list=["Cost","Payment"];
+	for (var userid in memberships[groupid]){
+		for (var item in list)
+			myApp.keypad({
+				cssClass:"modal-info",
+				input: '#'+list[item]+userid,
+				type: 'calculator',
+				valueMaxLength: 8,
+				dotButton: false,
+				onlyOnPopover:true,
+				toolbar:false,
+				formatValue:function (p, value){
+					var val=Math.floor(value);
+					if(val<0)
+						val=-val;
+					return val;
+				}
+		});
+	}
+	/*
+	myApp.keypad({
+		input: '.payment',
+		type: 'calculator',
+		valueMaxLength: 8,
+		dotButton: false,
+		onlyOnPopover:true,
+		toolbar:false,
+		formatValue:function (p, value){
+			val=Math.floor(value);
+			if(val<0)
+				val=-val;
+			return val;
+		}
+		
+	});
+	*/
+	/*
+	var myKeypad = myApp.keypad({
+		input: '.payment',
+		type: 'calculator',
+		valueMaxLength: 8,
+		dotButton: false,
+		onlyOnPopover:true,
+	});
+	*/
   $$(page.container).find('#submitTransaction').on('click', function () {
-	Description=$$(page.container).find('#Description').val();
-	Type=$$(page.container).find('#Type').val();
-	DateTimeFa=$$(page.container).find('#DateTimeFa').val();
+	var Description=$$(page.container).find('#Description').val();
+	var Type=$$(page.container).find('#Type').val();
+	var DateTimeFa=$$(page.container).find('#DateTimeFa').val();
 	
-	if(!Description){alert("توضیحات را درست وارد کنید");return;}
-	if(!Type){alert("نوع تراکنش را درست وارد کنید");return;}
-	if(!validateDateTimeFa(DateTimeFa)){alert("زمان را درست وارد کنید");return;}
-	Transactions=[];
+	if(!Description){myApp.alert("توضیحات را درست وارد کنید");return;}
+	if(!Type){myApp.alert("نوع تراکنش را درست وارد کنید");return;}
+	if(!validateDateTimeFa(DateTimeFa)){myApp.alert("زمان را درست وارد کنید");return;}
+	var Transactions=[];
 	
-		sumPayment=0;
+		var sumPayment=0;
 		$$(".payment").each(function(i,n){
-			val=$$(n).val()||0;
-			intval=parseInt(val,10);
+			var val=$$(n).val()||0;
+			var intval=parseInt(val,10);
 			if(intval!=val||intval<=0)
 				return;
 			Transactions.push([$$(n).attr('data-userid'),intval]);
 			sumPayment += intval; 
 		});
-		if(sumPayment==0){alert("لطفا پرداختی ها را وارد کنید.");return;}
-		sumCost=0;
+		if(sumPayment==0){myApp.alert("لطفا پرداختی ها را وارد کنید.");return;}
+		var sumCost=0;
 		$$(".cost").each(function(i,n){
-			val=$$(n).val()||0;
-			intval=parseInt(val,10);
+			var val=$$(n).val()||0;
+			var intval=parseInt(val,10);
 			if(intval!=val||intval<=0)
 				return;
 			Transactions.push([$$(n).attr('data-userid'),-intval]);
 			sumCost += intval; 
 		});
-		if(sumCost==0){alert("لطفا هزینه ها را وارد کنید.");return;	}
-		if(sumCost-sumPayment!=0){alert("جمع پرداختی و هزینه برابر نیست. اختلاف:"+Math.abs(sumCost-sumPayment));	return;	}
+		if(sumCost==0){myApp.alert("لطفا هزینه ها را وارد کنید.");return;	}
+		if(sumCost-sumPayment!=0){myApp.alert("جمع پرداختی و هزینه برابر نیست. اختلاف:"+Math.abs(sumCost-sumPayment));	return;	}
 			
 			
 	MakeTransaction2({
@@ -900,67 +1143,101 @@ myApp.onPageInit('newTransaction', function (page) {
 		Description:Description,Type:Type,DateTimeFa:DateTimeFa,
 		Transactions:Transactions
 	}).then(function(data){
-		alert("اطلاعات ثبت شد.");
-		mainView.loadPage('dash.html');
+		myApp.alert("اطلاعات ثبت شد.");
+		$$(".back").click();
 	});
 	
   });
 });
 myApp.onPageInit('enterOTP', function (page) {
-    
         var phone = page.query.phone;
 		$$(page.container).find('#phone').html(""+phone)
 		
        $$(page.container).find('#login').on('click', function () {
 		   var otp = $$(page.container).find('input[name="otp"]').val();
 		if(validatePhone(phone)&&/^([۰-۹]{4}|[0-9]{4})$/i.test(otp))
-			post({
+			post2({
 				path:"users/login/",
 				data:{ Phone: phone,OTP:otp},
-				success: function(data){
+			}).then(function(data){
 					
-					if(data.Output.SessionKey){
-						window.localStorage['sessionkey']=data.Output.SessionKey;
-						window.localStorage['userid']=data.Output.User.Id;
-						reloadAll().then(()=>mainView.loadPage('dash.html'));
-						/*
-						dbserver.Users.update(data.Output.User).then( function ( item ) {
-							console.log("stored:");
-							console.log(item);
-							updateFriends(function(){
-								updateGroups(function(){
-									mainView.loadPage('dash.html')
-								});
+				if(data.Output.SessionKey){
+					window.localStorage['sessionkey']=data.Output.SessionKey;
+					window.localStorage['userid']=data.Output.User.Id;
+					reloadAll().then(function(){
+						mainView.loadPage('dash.html');
+					});
+					/*
+					dbserver.Users.update(data.Output.User).then( function ( item ) {
+						console.log("stored:");
+						console.log(item);
+						updateFriends(function(){
+							updateGroups(function(){
+								mainView.loadPage('dash.html')
 							});
 						});
-						*/
-					}else{
-						alert(data);
-					}
-				},
-				error: function(data){
-					alert(JSON.stringify(data));
+					});
+					*/
+				}else{
+					myApp.alert(data);
 				}
+			}).catch(function(data){
+				myApp.hideIndicator();
+				console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");		
 			});		       
 		else
-			alert("شماره وارد شده صحیح نیست.");
+			myApp.alert("شماره وارد شده صحیح نیست.");
     }); 
     
 });
 myApp.init();
+
+myApp.onPageInit('group', function (page) {
+	$$(page.container).find('#deletegroup').on('click', function () {
+		if(!confirm("آیا می خواهید گروه حذف شود؟"))
+			return;
+		if(!confirm("با این کار امکان بازگشت اطلاعات گروه وجود ندارد.. مطمئنید؟"))
+			return;
+			
+		post2({
+			path:'Groups/Delete',
+			data:{GroupId:page.query.id}
+		}).then(function(data){
+			//updateGroups();
+			dbserver.Groups.update(data.Output).then( function ( item ) {
+				console.log("group stored:");
+				console.log(item);
+				myApp.alert("گروه حذف شد.");
+				mainView.loadPage('groups.html');
+			});
+			/*updateGroups(function(){
+				updateMemberships(function(){
+					alert("اطلاعات ثبت شد.");
+					mainView.loadPage('groups.html');
+				});
+			});
+			*/
+		}).catch(function(data){
+			console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
+		});
+		
+					
+	});
+});
 myApp.onPageInit('newGroup', function (page) {
     
   $$(page.container).find('#submitNewGroup').on('click', function () {
-	GroupName=$$(page.container).find('#GroupName').val();
-	if(!GroupName){alert("نام گروه را درست وارد کنید");return;}
+	var GroupName=$$(page.container).find('#GroupName').val();
+	if(!GroupName){myApp.alert("نام گروه را درست وارد کنید");return;}
 	
 	post2({
 		path:'Groups/Create',
 		data:{Name:GroupName}
 	}).then(function(data){
 		//updateGroups();
-		Promise.all([updateGroups2(),updateMemberships2()]).then(()=>{
-			alert("اطلاعات ثبت شد.");
+		Promise.all([updateGroups2(),updateMemberships2()]).then(function(){
+			myApp.alert("اطلاعات ثبت شد.");
+			//$$(".back").click();
 			mainView.loadPage('groups.html');
 		});
 		/*updateGroups(function(){
@@ -971,37 +1248,35 @@ myApp.onPageInit('newGroup', function (page) {
 		});
 		*/
 	}).catch(function(data){
-		alert(JSON.stringify(data));
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 	});
   });
 });
 
 myApp.onPageInit('editname', function (page) {
-	BFa=users[me()].BirthdayFa;
+	var BFa=users[me()].BirthdayFa;
+	
+	var showdefault=true;
 	
 	if(BFa<13000000){		
 		BFa=13700101;
-		defaultvalue = persianDate.fromLong(BFa*1000000);
-	}else{
-		defaultvalue = persianDate.fromLong(BFa*1000000);
-		
-		$$('#BirthDayFaDisplay').val(formatDate(defaultvalue,false));
+		showdefault=false;
 	}
-	
-	createPicker('#BirthDayFa','#BirthDayFaDisplay',defaultvalue,false);
+	defaultvalue = persianDate.fromLong(BFa*1000000);	
+	createPicker('#BirthDayFa','#BirthDayFaDisplay',defaultvalue,false,showdefault);
 	// Inline date-time
-    
+    //enableScoralToInput();
   $$(page.container).find('#submitName').on('click', function () {
-	FirstName=$$(page.container).find('#FirstName').val();
-	LastName=$$(page.container).find('#LastName').val();
-	Email=$$(page.container).find('#Email').val();
-	Male=$$(page.container).find('#Gender').val();
-	BirthdayFa=$$(page.container).find('#BirthDayFa').val();
+	var FirstName=$$(page.container).find('#FirstName').val();
+	var LastName=$$(page.container).find('#LastName').val();
+	var Email=$$(page.container).find('#Email').val();
+	var Male=$$(page.container).find('#Gender').val();
+	var BirthdayFa=$$(page.container).find('#BirthDayFa').val();
 	
-	if(!FirstName){alert("نام را درست وارد کنید");return;}
-	if(!LastName){alert("نام خانوادگی را درست وارد کنید");return;}
-	if(!validateEmail(Email)){alert("ایمیل را درست وارد کنید");return;}
-	if(!validateDateTimeFa(BirthdayFa*1000000)){alert("تاریخ تولد را درست وارد کنید");return;}
+	if(!FirstName){myApp.alert("نام را درست وارد کنید");return;}
+	if(!LastName){myApp.alert("نام خانوادگی را درست وارد کنید");return;}
+	if(!validateEmail(Email)){myApp.alert("ایمیل را درست وارد کنید");return;}
+	if(!validateDateTimeFa(BirthdayFa*1000000)){myApp.alert("تاریخ تولد را درست وارد کنید");return;}
 	post2({
 		path:'users/update',
 		data:{FirstName:FirstName,LastName:LastName,Phone:users[me()].Phone,Male:Male,Email:Email,BirthdayFa:BirthdayFa}
@@ -1009,20 +1284,28 @@ myApp.onPageInit('editname', function (page) {
 		//updateFriends();
 		dbserver.Users.update(data.Output).then(function(){
 			reinitUsersCache2().then(function(){
-				alert("اطلاعات ثبت شد.");
+				myApp.alert("اطلاعات ثبت شد.");
 				mainView.loadPage('dash.html');
 			});
 		});
 		//mainView.loadPage('dash.html');
 	}).catch(function(data){
-		alert(JSON.stringify(data));	
+		console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");	
 	});
   });
 });
-////////////////////////////////////////////////////////////////////////////////
 myApp.onPageInit('dash', function (page) {
-    var virtualList = myApp.virtualList($$('.virtual-list'), {
+	//mainView.loadPage('userTransactions.html?userid='+me());
+	
+});
+////////////////////////////////////////////////////////////////////////////////
+myApp.onPageInit('userTransactions', function (page) {
+	console.log("userTransactions is loading...");
+	var userid=parseInt(page.query.userid||me());
+	var groupid=parseInt(page.query.groupid);
+    var virtualList = myApp.virtualList($$('.userTransactions-list'), {
         items: [],
+		//updatableScroll:true,
         searchAll: function (query, items) {
             var found = [];
             for (var i = 0; i < items.length; i++) {
@@ -1032,7 +1315,7 @@ myApp.onPageInit('dash', function (page) {
         },
         // List item Template7 template
         template: '<li>' +
-                    '<a href="transaction.html?id={{TransactionId}}" class="item-link item-content">' +
+					'<a href="transaction.html?id={{TransactionId}}" class="item-link item-content">' +
 					'<div class="item-media"><img src="img/type/{{Type}}.png" width="44"/></div>'+
                       '<div class="item-inner">' +
                         '<div class="item-title-row">' +
@@ -1043,26 +1326,26 @@ myApp.onPageInit('dash', function (page) {
                     '</a>' +
                   '</li>',
         // Item height
-        height: 63,
+        height: 80,
     });
     
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
-		reloadAll().then(()=>init_updateDashList(virtualList));
+		reloadAll().then(function(){init_updateUserTransacrionList(userid,groupid,virtualList);});
 		/*
 		updateTransactions(function(){
 			updateFriends(function(){
 				updateGroups(function(){
 					updateMemberships(function(){
-						init_updateDashList(virtualList);
+						init_updateUserTransacrionList(userid,virtualList);
 					});
 				});
 			});
 		});
 		*/
     });
-	init_updateDashList(virtualList);
+	init_updateUserTransacrionList(userid,groupid,virtualList);
 		
 });
 myApp.onPageInit('showTransactions', function (page) {
@@ -1089,7 +1372,7 @@ myApp.onPageInit('showTransactions', function (page) {
                     '</a>' +
                   '</li>',
         // Item height
-        height: 63,
+        height: 80,
     });
     
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
@@ -1127,13 +1410,13 @@ myApp.onPageInit('groups', function (page) {
                     '</a>' +
                   '</li>',
         // Item height
-        height: 63,
+        height: 80,
     });
     
     var ptrContent = $$(page.container).find('.pull-to-refresh-content');
     // Add 'refresh' listener on it
     ptrContent.on('refresh', function (e) {
-		updateTransactions2().then(function(){
+		Promise.all([updateGroups2(),updateMemberships2()]).then(function(){
 			init_updateGroupsList(virtualList);
 		});
 
@@ -1142,6 +1425,40 @@ myApp.onPageInit('groups', function (page) {
 		
 });
 myApp.onPageInit('add-member', function (page) {
+	
+	$$(page.container).find('#GetFromContact').on('click', function () {
+		if(!navigator.contacts){
+			myApp.alert("مخاطبی یافت نشد.")
+			return;
+		}
+			
+		navigator.contacts.pickContact(function(contact){
+			console.log('The following contact has been selected:' ,contact);
+			var phonestmp=[];
+			if(contact.phoneNumbers)
+				for(i =0;i<contact.phoneNumbers.length;i++){
+					var phonestr=contact.phoneNumbers[i].value.trim().replace("+98","0");
+					var phone="";
+					for(j=0;j<phonestr.length;j++)
+						if(phonestr[j]>='0'&&phonestr[j]<='9')
+							phone+=phonestr[j];
+					//phone=.replace(" ","").replace(" ","").replace(" ","")
+					//replace("-","").trim();
+					if(validatePhone(phone))
+						phonestmp.push(phone);
+					//else
+						//alert("incorrect"+phone);
+				}
+			//alert(phones);
+			console.log(phonestmp);
+			if(phonestmp.length)
+				$$(page.container).find('input[name="phone"]').val(phonestmp[0]);
+			else
+				myApp.alert("تلفن مجازی یافت نشد.");
+		},function(err){
+			myApp.alert("اطلاعات دریافت نشد")
+		});
+	});
 	   $$(page.container).find('#َAddMember').on('click', function () {
         var groupid=page.query.groupid;
 		var phone = $$(page.container).find('input[name="phone"]').val();
@@ -1152,69 +1469,136 @@ myApp.onPageInit('add-member', function (page) {
 			}).then(function(data){
 					//alert(data.Message);
 				Promise.all([updateMemberships2(),updateFriends2()]).then(function(){
-						alert("به گروه اضافه شد.");
+						myApp.alert("به گروه اضافه شد.");
 						mainView.loadPage('group.html?id='+groupid);
 					});
 				/*updateMemberships(function(){
 					updateFriends(function(){
-						alert("به گروه اضافه شد.");
+						myApp.alert("به گروه اضافه شد.");
 						mainView.loadPage('group.html?id='+groupid);
 					});
 				});
 				*/
 				//
 			}).catch(function(data){
-					alert(JSON.stringify(data));
+					console.error(JSON.stringify(data));myApp.alert("خطا ارتباط با سرور برقرار نشد.");
 			});		       
 		else
-			alert("شماره وارد شده صحیح نیست.");
+			myApp.alert("شماره وارد شده صحیح نیست.");
     });
 });
 myApp.onPageInit('group-members', function (page) {
-        var groupid=page.query.groupid;
-		var virtualList = myApp.virtualList($$('.group-membersList'), {
+	var groupid=page.query.groupid;
+	var virtualList = myApp.virtualList($$('.group-membersList'), {
         items: [],
         searchAll: function (query, items) {
             var found = [];
             for (var i = 0; i < items.length; i++) {
-                if (items[i].User.indexOf(query) >= 0 || query.trim() === '') found.push(i);
+                if (items[i].UserName.indexOf(query) >= 0 || query.trim() === '') found.push(i);
             }
             return found; //return array with mathced indexes
         },
         // List item Template7 template
-        template: '<li class="item-content">' +                    
-					'<div class="item-media"><img src="img/user/{{UserPic}}.png" width="44"/></div>'+
+        template: '<li>' +                    
+				    '<a href="#" class="item-link item-content user" data-userid="{{UserId}}" data-groupid="{{GroupId}}" data-href="userTransactions.html?userid={{UserId}}&groupid={{GroupId}}">' +
+					'<div class="item-media"><img src="{{UserPic}}" width="44"/></div>'+
                       '<div class="item-inner">' +
                         '<div class="item-title-row">' +
-                          '<div class="item-title">{{FirstName}}  {{LastName}}</div><div class="item-after" style="direction:ltr;">{{money Amount}} </div>' +
+                          '<div class="item-title">{{UserName}}</div><div class="item-after" style="direction:ltr;">{{money Amount}} </div>' +
                         '</div>' +
-	'	<div class="item-subtitle">تلفن: ۰{{pd UserPhone}}</div>'+
+						'<div class="item-subtitle">تلفن: ۰{{pd UserPhone}}</div>'+
                       '</div>' +
+					'</a>'+
                   '</li>',
         // Item height
-        height: 63,
+		
+        height: 80,
     });
     init_update=function(){
 		dbserver.Memberships.query().filter().execute().then(function(results){
 			virtualList.deleteAllItems();
 			for (var i = 0; i < results.length; i++) {						
-				res=results[i];
+				var res=results[i];
 				if(res.GroupId!=groupid)
 					continue;
-				user=users[res.UserId];
-				item={
+				var user=users[res.UserId];
+				var item={
 						Id:res.Id,
 						Amount:  memberships[groupid][user.Id].Cash,
 						UserId:user.Id,
-						FirstName:user.FirstName,
-						LastName:user.LastName,
+						GroupId:groupid,
+						
+						UserName:toStringUser(user,'n'),
 						UserPhone:user.Phone,
-						UserPic:(user.Male?"":"fe")+"male"
+						UserPic:getUserPic(user)
 					};
-					if(!(item.FirstName+item.LastName).trim())
-						item.FirstName="بی نام";
+						
 				virtualList.prependItem(item);
 			}
+			$$(".user").on('taphold click',function(e){
+				e.preventDefault();
+				var userid=$$(this).attr('data-userid');
+				var groupid=$$(this).attr('data-groupid');
+				var target=$$(this).attr('data-href');
+				var permission=memberships[groupid][me()].Permission;
+				var actionSheetButtons = [
+					// First buttons group
+					[
+						// Group Label
+						{
+							text: 'لطفا دسترسی فرد را مشخص کنید',
+							label: true
+						},
+						// First button
+						{
+							text:((permission)==0?'> ':'') +'بدون دسترسی',
+							color: 'red',
+							onClick: function () {
+								SetPermission(userid,groupid,0).then(function(){myApp.alert("با موفقیت انجام شد.");});
+							}
+						},
+						// First button
+						{
+							text:((permission&1)!=0?'> ':'') +'خواندنی',
+							color: 'red',
+							onClick: function () {
+								SetPermission(userid,groupid,1).then(function(){myApp.alert("با موفقیت انجام شد.");});
+							}
+						},
+						// Another red button
+						{
+							text: ((permission&2)!=0?'> ':'') +'نوشتنی',
+							color: 'blue',
+							onClick: function () {
+								SetPermission(userid,groupid,3).then(function(){myApp.alert("با موفقیت انجام شد.");});
+								
+							}
+						},
+						
+					],
+					// Second group
+					[
+					// Another red button
+						{
+							text: 'مشاهده تراکنش ها',
+							color: 'black',
+							onClick: function () {
+								mainView.loadPage(target);
+								
+							}
+						},
+						{
+							text: 'انصراف',
+							bold: true
+						}
+					]
+				];
+				if((permission&4)==0 ||userid==me())
+					mainView.loadPage(target);
+				else
+					myApp.actions(actionSheetButtons);
+				
+			});
 			myApp.pullToRefreshDone();			
 		});
 	}
@@ -1237,19 +1621,25 @@ myApp.onPageInit('group-members', function (page) {
 
 myApp.onPageInit('transaction', function (page) {
 	var transactionId = parseInt(page.query.id);
+	var owneruser=users[transactions[transactionId].OwnerUserId];
+	
+	
+	
 	var firstrow='<div class="item-media"><img src="img/type/'+transactions[transactionId].Type+'.png" width="44"/></div>'
 					+'<div class="item-inner">'
 					+'  <div class="item-title-row">'
 					+'		<div class="item-title">'+transactions[transactionId].Description+'</div>'
 					+'  </div>'
 					+'	<div class="item-subtitle">گروه '+groups[transactions[transactionId].GroupId].Name+'</div>'
-					+'  <div class="item-subtitle">'+formatDate(persianDate.fromLong(transactions[transactionId].DateTimeFa),true)+'</div>'
-					
+					+'  <div class="item-subtitle">'+toStringUser(owneruser,'a')+'</div>'
+					+'  <div class="item-text">'+formatDate(persianDate.fromLong(transactions[transactionId].DateTimeFa),true)+'</div>'
+					+'  <div class="item-subtitle">'+'مبلغ:'+(transactions[transactionId].Amount+'').toPersianDigit()+'</div>'
 					+'</div>';
 	$$('#firstrow').html(firstrow);
 	
     var virtualList = myApp.virtualList($$('.transaction-list'), {
         items: [],
+		
         searchAll: function (query, items) {
             var found = [];
             for (var i = 0; i < items.length; i++) {
@@ -1258,44 +1648,44 @@ myApp.onPageInit('transaction', function (page) {
             return found; //return array with mathced indexes
         },
         // List item Template7 template
-        template: '<li class="item-content">' +                    
-					'<div class="item-media"><img src="img/user/{{UserPic}}.png" width="44"/></div>'+
+        template: '<li><div class="item-content">' +                    
+					'<div class="item-media"><img src="{{UserPic}}" width="44"/></div>'+
                       '<div class="item-inner">' +
                         '<div class="item-title-row">' +
                           '<div class="item-title">{{User}}</div><div class="item-after" style="direction:ltr;">{{money Amount}} </div>' +
                         '</div>' +
 	'	<div class="item-subtitle">تلفن: ۰{{pd UserPhone}}</div>'+
                       '</div>' +
-                  '</li>',
+                  '</div></li>',
         // Item height
-        height: 63,
+        height: 80,
     });
     
 	dbserver.TransactionDetails.query().filter('TransactionId',transactionId).execute().then(function(results){
 		for (var i = 0; i < results.length; i++) {						
-			res=results[i];
-			user=users[res.UserId];
-			item={
+			var res=results[i];
+			var user=users[res.UserId];
+			var item={
 					Id:res.Id,
 					Amount: res.Amount,
 					UserId:user.Id,
-					User:user.FirstName+" "+user.LastName,
+					User:toStringUser(user,'n'),
 					UserPhone:user.Phone,
-					UserPic:(user.Male?"":"fe")+"male"
+					UserPic:getUserPic(user)
 					
 				};
-				if(!item.User.trim())
-					item.User="بی نام";
+				
 			virtualList.prependItem(item);
 		}				
 	});
 
 });
 
+
 }
-function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
+function createPicker(targetvalue,targetdisplay,defaultvalue,showtime,showdefault){
 	
-	days={
+	var days={
                 values: (function () {
                     var arr = [];
                     for (var i = 1; i <= 31; i++) { arr.push(i); }
@@ -1307,7 +1697,7 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
                     return arr;
                 })(),
             };
-	months=// Months
+	var months=// Months
             {
                 values: (function () {
                     var arr = [];
@@ -1322,7 +1712,7 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
                 textAlign: 'right'
             };
 			// Years
-    years={
+    var years={
                 values: (function () {
                     var arr = [];
                     for (var i = 1300; i <= 1394; i++) { arr.push(i); }
@@ -1335,11 +1725,11 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
                 })(),
             };
             // Space divider
-    divider={
+    var divider={
                 divider: true,
                 content: '&nbsp;&nbsp;'
             };
-	hours=// Hours
+	var hours=// Hours
             {
                 values: (function () {
                     var arr = [];
@@ -1354,12 +1744,12 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
             };
 			
             // Divider
-    dividerTime={
+    var dividerTime={
                 divider: true,
                 content: ':'
             };
             // Minutes
-	minutes={
+	var minutes={
                 values: (function () {
                     var arr = [];
                     for (var i = 0; i <= 59; i+=10) { arr.push(i); }
@@ -1371,11 +1761,12 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
                     return arr;
                 })(),
             };
-	cols=[days,months,years];
+	var cols=[days,months,years];
 	if(showtime)
-		cols=[days,months,years,divider,hours,dividerTime,minutes];
-	defaultValues=[ defaultvalue.getDate(),defaultvalue.getMonth(), defaultvalue.getFullYear(), defaultvalue.getHours(), defaultvalue.getMinutes()-defaultvalue.getMinutes()%10];
+		cols=[days,months,years,divider,minutes,dividerTime,hours];
+	var defaultValues=[ defaultvalue.getDate(),defaultvalue.getMonth(), defaultvalue.getFullYear(),  defaultvalue.getMinutes()-defaultvalue.getMinutes()%10,defaultvalue.getHours()];
 	var pickerInline = myApp.picker({
+		cssClass:"modal-info",
         input: targetdisplay,
         convertToPopover:false,
         toolbar: false,
@@ -1395,21 +1786,38 @@ function createPicker(targetvalue,targetdisplay,defaultvalue,showtime){
             //}
         },
         formatValue: function (p, values, displayValues) {
-			to2Digit=function (val){
-				if(!val)
-					return '00';
-				return (val<10?'0':'')+val;
-			};
-			$$(targetvalue).val(values[2] + '' + to2Digit(values[1]) +''+to2Digit(values[0])+(showtime?to2Digit(values[3])+to2Digit(values[4])+'00':''));
-			pd=persianDate([values[2],values[1],values[0]]);
+			var pd=persianDate([values[2],values[1],values[0]]);
 			if(showtime)
-				pd=persianDate([values[2],values[1],values[0],values[3],values[4]]);
+				pd=persianDate([values[2],values[1],values[0],values[4],values[3]]);
+			$$(targetvalue).val(dateToLong(pd,showtime));
 			return formatDate(pd,showtime);
             //return displayValues[0] + ' ' + displayValues[1] + ' ' + displayValues[2]+(showtime?' ساعت '+displayValues[3]+':'+displayValues[4]:'' );
         },
         cols:cols
     });
 	pickerInline.setValue(defaultValues, 50);
+	if(showdefault){
+		var val=dateToLong(defaultvalue,showtime);
+		var valDisp=formatDate(defaultvalue,showtime);
+		$$(targetvalue).val(val);
+		$$(targetdisplay).val(valDisp);
+	}
+		
 }
+
 dbinit();
 //pageReady();
+
+function enableScoralToInput(){
+	 $$("input").focus(function(e) {
+		var scrollTo = $$(this);
+		var container=$$('.list-block');
+		setTimeout((function() {
+			$$('.page-content').scrollTop(scrollTo.offset().top - container.offset().top + container.scrollTop(),100);
+			
+		}), 500);
+	});
+}
+function refresh(){
+	myApp.pullToRefreshTrigger(".pull-to-refresh-content");
+}
